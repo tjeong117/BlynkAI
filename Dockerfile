@@ -3,6 +3,16 @@
 # Base node image
 FROM node:20-alpine AS node
 
+# -----> ADD THESE LINES EARLY <-----
+# Install Python3 and pip using apk (Alpine package manager)
+# Running as root here before switching user later
+RUN apk add --no-cache python3 py3-pip
+
+# Install the mcp-server-time package using pip
+# Ensure python3 is used, as 'python' might not be aliased yet
+RUN python3 -m pip install mcp-server-time
+# ------------------------------------
+
 # Install jemalloc
 RUN apk add --no-cache jemalloc
 
@@ -16,6 +26,7 @@ RUN uv --version
 RUN mkdir -p /app && chown node:node /app
 WORKDIR /app
 
+# Switch to non-root user AFTER installing packages needing root
 USER node
 
 COPY --chown=node:node . .
@@ -33,8 +44,6 @@ RUN \
     NODE_OPTIONS="--max-old-space-size=2048" npm run frontend; \
     npm prune --production; \
     npm cache clean --force
-
-RUN mkdir -p /app/client/public/images /app/api/logs
 
 # Node API setup
 EXPOSE 3080
